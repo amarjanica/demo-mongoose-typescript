@@ -1,17 +1,20 @@
 {
-  "name": "demo-mongoose-typescript",
-  "version": "1.0.0",
+  "name": "@amarjanica/demo-mongoose-typescript",
+  "version": "1.0.4",
   "description": "",
-  "main": "index.js",
+  "main": "dist/location.js",
+  "files": ["dist/**"],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "test": "jest",
     "lint": "eslint src/**/*",
-    "prettier": "prettier --write \"./(src|tests)/**/*.ts\"" 
+    "prettier": "prettier --write \"./(src|tests)/**/*.ts\"",
+    "tsc": "tsc",
+    "prepublishOnly": "npm run lint && npm run test && npm run prettier && npm run tsc"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/amarjanica/demo-mongoose-typescript.git"
-  },
+  "repository": "https://github.com/amarjanica/demo-mongoose-typescript.git",
   "author": "Ana Bujan",
   "license": "MIT",
   "bugs": {

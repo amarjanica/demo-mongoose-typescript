@@ -1,10 +1,10 @@
-import {clear, connect, close} from './db-connect';
+import { clear, connect, close } from './db-connect';
 import populate from './populate';
 import Location from '@models/location';
 
 describe('Locations model', () => {
   it('should return descendants for a location', async () => {
-    const loc = await Location.findOne({name: 'Croatia'});
+    const loc = await Location.findOne({ name: 'Croatia' });
     if (loc == null) {
       throw new Error('location undefined!');
     }
@@ -57,10 +57,10 @@ describe('Locations model', () => {
   beforeAll(async () => {
     await connect();
     await populate();
-  })
+  });
 
   afterAll(async () => {
     await clear();
     await close();
-  })
-})
+  });
+});

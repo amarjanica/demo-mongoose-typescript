@@ -120,4 +120,4 @@ LocationSchema.static('nearby', (lat: number, lng: number, distance: number) => 
 });
 
 export default (mongoose.models.Location as unknown as ILocationModel) ||
-mongoose.model<ILocation, ILocationModel>('Location', LocationSchema);
+  mongoose.model<ILocation, ILocationModel>('Location', LocationSchema);
