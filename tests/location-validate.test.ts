@@ -1,15 +1,15 @@
 import Location from '@models/location';
 
-describe('Location Validation', ()=> {
-  it('is invalid if properties are not defined',  () => {
+describe('Location Validation', () => {
+  it('is invalid if properties are not defined', () => {
     const location = new Location({});
 
     const error = location.validateSync({});
 
-    expect(error?.message).toContain('Location validation failed: geometry.type: Geometry is required!')
-  })
+    expect(error?.message).toContain('Location validation failed: geometry.type: Geometry is required!');
+  });
 
-  it('is invalid if null coordinates', ()=> {
+  it('is invalid if null coordinates', () => {
     const location = new Location({
       name: 'name',
       parent: undefined,

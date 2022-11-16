@@ -1,10 +1,10 @@
-import mongoose, {Model, Schema, Types} from "mongoose";
+import mongoose, { Types, Schema, Model } from 'mongoose';
 
 export enum LocationType {
   COUNTRY = 'country',
   CITY = 'city',
   DISTRICT = 'district',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 export interface ILocation {
@@ -12,12 +12,27 @@ export interface ILocation {
   name: string;
   location_type: LocationType;
   geometry: { type: string; coordinates: number[] };
-  parent?: ILocation
+  parent?: ILocation;
 }
 
-const LocationSchema = new Schema<ILocation>({
-  name: { type: String, required: true},
-  location_type: { type: String, enum: LocationType, default: LocationType.UNKNOWN},
+export interface ILocationMethods {
+  descendants(): Promise<ILocation & { level: number }[]>;
+
+  parents(): Promise<ILocation & { level: number }[]>;
+}
+
+export interface ILocationModel extends Model<ILocation, {}, ILocationMethods> {
+  /**
+   * @param lat decimal latitude
+   * @param lng decimal longitude
+   * @param distance distance in kilometers
+   */
+  nearby(lat: number, lng: number, distance: number): Promise<ILocation & { distance: number }[]>;
+}
+
+const LocationSchema = new Schema<ILocation, ILocationModel, ILocationMethods>({
+  name: { type: String, required: true },
+  location_type: { type: String, enum: LocationType, default: LocationType.UNKNOWN },
   geometry: {
     type: {
       type: String,
@@ -32,17 +47,77 @@ const LocationSchema = new Schema<ILocation>({
           if (isNaN(longitude) || isNaN(latitude)) {
             return false;
           }
-
           return longitude >= -180 && longitude <= 180 && latitude >= -90 && latitude <= 90;
         },
-        message: 'Coordinates should be in format [longitude, latitude]'
-      }
+        message: 'Coordinates should be in format [longitude, latitude]',
+      },
     },
-    parent: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Location'
-    }
-  }
+  },
+  parent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location',
+  },
 });
 
-export default (mongoose.models.Location as unknown as Model<ILocation> || mongoose.model<ILocation>('Location', LocationSchema))
+LocationSchema.method('descendants', function () {
+  return mongoose.model('Location').aggregate([
+    {
+      $match: {
+        _id: this._id,
+      },
+    },
+    {
+      $graphLookup: {
+        from: 'locations',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'parent',
+        as: 'descendants',
+        depthField: 'level',
+      },
+    },
+    { $unwind: '$descendants' },
+    { $replaceRoot: { newRoot: '$descendants' } },
+  ]);
+});
+
+LocationSchema.method('parents', function () {
+  return mongoose.model('Location').aggregate([
+    {
+      $match: {
+        _id: this._id,
+      },
+    },
+    {
+      $graphLookup: {
+        from: 'locations',
+        startWith: '$parent',
+        connectFromField: 'parent',
+        connectToField: '_id',
+        as: 'parents',
+        depthField: 'level',
+        maxDepth: 3,
+      },
+    },
+    { $unwind: '$parents' },
+    { $replaceRoot: { newRoot: '$parents' } },
+  ]);
+});
+
+LocationSchema.static('nearby', (lat: number, lng: number, distance: number) => {
+  return mongoose.model('Location').aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [lng, lat] },
+        distanceField: 'distance',
+        minDistance: 0,
+        maxDistance: distance * 1000,
+        includeLocs: 'geometry',
+        spherical: true,
+      },
+    },
+  ]);
+});
+
+export default (mongoose.models.Location as unknown as ILocationModel) ||
+mongoose.model<ILocation, ILocationModel>('Location', LocationSchema);
